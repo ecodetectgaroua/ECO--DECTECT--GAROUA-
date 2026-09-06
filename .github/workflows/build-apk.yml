@@ -1,0 +1,316 @@
+name: Construire ECO-DETECT GAROUA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Télécharger le projet
+        uses: actions/checkout@v4
+
+      - name: Installer Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Créer le projet Android Flutter
+        run: |
+          flutter create . \
+            --platforms=android \
+            --org com.ecodetectgaroua \
+            --project-name eco_detect_garoua
+
+      - name: Installer la caméra et la galerie
+        run: flutter pub add image_picker
+
+      - name: Installer le code ECO-DETECT
+        run: |
+          cat > lib/main.dart <<'EOF'
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+
+void main() {
+  runApp(const EcoDetectApp());
+}
+
+class EcoDetectApp extends StatelessWidget {
+  const EcoDetectApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'ECO-DETECT GAROUA',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.green,
+      ),
+      home: const AccueilPage(),
+    );
+  }
+}
+
+class AccueilPage extends StatefulWidget {
+  const AccueilPage({super.key});
+
+  @override
+  State<AccueilPage> createState() => _AccueilPageState();
+}
+
+class _AccueilPageState extends State<AccueilPage> {
+  final ImagePicker picker = ImagePicker();
+  File? image;
+
+  Future<void> prendrePhoto() async {
+    final XFile? photo = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
+    );
+
+    if (photo != null) {
+      setState(() {
+        image = File(photo.path);
+      });
+    }
+  }
+
+  Future<void> choisirPhoto() async {
+    final XFile? photo = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+
+    if (photo != null) {
+      setState(() {
+        image = File(photo.path);
+      });
+    }
+  }
+
+  void analyser() {
+    if (image == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ResultatPage(image: image!),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'ECO-DETECT GAROUA',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+
+            const Icon(
+              Icons.recycling,
+              size: 90,
+              color: Colors.green,
+            ),
+
+            const SizedBox(height: 15),
+
+            const Text(
+              'Détection des déchets plastiques',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 25,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            const Text(
+              'Utilisez l’intelligence artificielle pour identifier les déchets plastiques.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
+            ),
+
+            const SizedBox(height: 30),
+
+            if (image != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: Image.file(
+                  image!,
+                  height: 260,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              )
+            else
+              Container(
+                height: 260,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  color: Colors.green.shade50,
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.image_search,
+                      size: 70,
+                      color: Colors.green,
+                    ),
+                    SizedBox(height: 10),
+                    Text('Aucune image sélectionnée'),
+                  ],
+                ),
+              ),
+
+            const SizedBox(height: 25),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: prendrePhoto,
+                icon: const Icon(Icons.camera_alt),
+                label: const Text('PRENDRE UNE PHOTO'),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: choisirPhoto,
+                icon: const Icon(Icons.photo_library),
+                label: const Text('CHOISIR UNE PHOTO'),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            if (image != null)
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: analyser,
+                  icon: const Icon(Icons.search),
+                  label: const Text('ANALYSER LE DÉCHET'),
+                ),
+              ),
+
+            const SizedBox(height: 30),
+
+            const Text(
+              'ECO-DETECT GAROUA',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+
+            const Text(
+              'Protection de l’environnement • Innovation • Ville propre',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ResultatPage extends StatelessWidget {
+  final File image;
+
+  const ResultatPage({
+    super.key,
+    required this.image,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Résultat de l’analyse'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: Image.file(
+                image,
+                width: double.infinity,
+                height: 280,
+                fit: BoxFit.cover,
+              ),
+            ),
+
+            const SizedBox(height: 25),
+
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.recycling,
+                      size: 55,
+                      color: Colors.green,
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      'Analyse effectuée',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      'Cette première version prépare l’application à la détection automatique des déchets plastiques.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 15),
+
+            const Text(
+              'Prochaine évolution : intégration du véritable modèle d’intelligence artificielle pour reconnaître les bouteilles, sacs, gobelets et autres déchets plastiques.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+EOF
+
+      - name: Construire l'application Android
+        run: flutter build apk --release
+
+      - name: Récupérer l'APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ECO-DETECT-GAROUA-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
