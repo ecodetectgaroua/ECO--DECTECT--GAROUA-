@@ -1,5 +1,4 @@
 name: Construire ECO-DETECT GAROUA
-
 on:
   push:
     branches: [main]
